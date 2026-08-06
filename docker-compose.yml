@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  telegram-backup:
+    build: .
+    container_name: telegram-backup
+    restart: unless-stopped
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./telegram_session.session:/app/telegram_session.session
+      - ./data:/app/data
+      - ./channels:/app/channels
+      - ./logs:/app/logs
+    ports:
+      - "8080:8080"
+    environment:
+      - TZ=Asia/Kuala_Lumpur
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

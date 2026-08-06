@@ -1,0 +1,22 @@
+{
+  "_comment": "Copy this to config.json and fill in your values",
+  "api_id": 12345678,
+  "api_hash": "your_api_hash_here",
+  "phone_number": "+1234567890",
+  "session_name": "telegram_session",
+  "channels": ["@channel_username", "-1001234567890"],
+  "parallel_downloads": 3,
+  "download_timeout_seconds": 600,
+  "download_retry_count": 3,
+  "max_lifetime_retries": 20,
+  "queue_max_size": 5000,
+  "min_disk_space_gb": 6,
+  "channel_auto_disable_after": 5,
+  "media_record_ttl_days": 90,
+  "retry_drop_log": true,
+  "resync_interval_minutes": 60,
+  "status_port": 8080,
+  "db_path": "telegram_state.db",
+  "channel_overrides": {},
+  "manual_downloads": {}
+}

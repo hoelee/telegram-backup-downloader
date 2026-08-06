@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+*.session
+*.db
+channels/
+logs/
+data/
+.env
+config.json
+.hermes/
