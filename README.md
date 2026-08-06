@@ -1,6 +1,13 @@
 # Telegram Backup Downloader v5
 
+![Docker Image](https://img.shields.io/docker/v/hoelee/telegram-backup-downloader)
+![Platforms](https://img.shields.io/badge/platforms-linux%2Famd64%2C%20linux%2Farm64-blue)
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-hoelee%2Ftelegram--backup--downloader-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/hoelee/telegram-backup-downloader)
+[![GitHub](https://img.shields.io/badge/GitHub-hoelee%2Ftelegram--backup--downloader-181717?logo=github)](https://github.com/hoelee/telegram-backup-downloader)
+
 Downloads text, photos, videos, and documents from configured Telegram channels. Message text is stored in `messages.txt` and JSONL metadata; media is sorted into per-channel folders. SQLite tracks completed work, failed downloads, and sync progress.
+
+> **Platform support:** Docker images are built for `linux/amd64` and `linux/arm64` only. Legacy 32-bit ARM (`arm/v7`) is not supported because the `cryptg` Telethon extension has no prebuilt wheel for it. This covers servers, desktops, NAS devices, Raspberry Pi 4/5, and Apple Silicon via emulation.
 
 ## Prerequisites
 
@@ -17,6 +24,33 @@ Downloads text, photos, videos, and documents from configured Telegram channels.
 Backups are written to `channels/`; logs are written to `logs/app.log`. Stop gracefully with Ctrl+C.
 
 ## Docker
+
+### Option A: Pull from Docker Hub (recommended)
+
+The image is published to Docker Hub as [`hoelee/telegram-backup-downloader`](https://hub.docker.com/r/hoelee/telegram-backup-downloader) and supports `linux/amd64` and `linux/arm64`.
+
+1. Create and configure `config.json` from the example.
+2. Run the container:
+
+```bash
+docker run -d \
+  --name telegram-backup \
+  --restart unless-stopped \
+  -v $(pwd)/config.json:/app/config.json:ro \
+  -v $(pwd)/telegram_session.session:/app/telegram_session.session \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/channels:/app/channels \
+  -v $(pwd)/logs:/app/logs \
+  -p 8080:8080 \
+  -e TZ=Asia/Kuala_Lumpur \
+  hoelee/telegram-backup-downloader:latest
+```
+
+3. Follow logs with `docker logs -f telegram-backup`.
+
+> Set `status_port` to `8080` in `config.json` to use the health check and status API.
+
+### Option B: Build from source with Docker Compose
 
 1. Create and configure `config.json` from the example.
 2. Run `docker compose up -d --build`.
