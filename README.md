@@ -127,7 +127,7 @@ docker compose logs -f telegram-backup
 | `resync_interval_minutes` | No | `60` | Periodic backfill interval; `0` disables it. |
 | `status_port` | No | `0` | HTTP port; `0` disables the server. |
 | `db_path` | No | `telegram_state.db` | SQLite state database path. |
-| `channel_overrides` | No | `{}` | Per-channel controls. Use `turnon: false` to skip a channel without removing it from `channels`. Example: `{"-1001":{"turnon":false}}`. Change is detected by config watcher — no restart needed. |
+| `channel_overrides` | No | `{}` | Per-channel controls. Only `turnon` is supported. Use `turnon: false` to skip a channel without removing it from `channels`. Example: `{"-100321012345":{"turnon":false}}`. Change is detected by config watcher — no restart needed. |
 | `manual_downloads` | No | `{}` | Message IDs to prioritize, keyed by channel ID. Useful to force-retry specific messages. Example: `{"-1001":[42,43,44]}`. Change is detected by config watcher — no restart needed. |
 
 `config.json` is watched every 10 seconds. Changes to channels, overrides, and manual downloads are applied without restarting. Do not set `status_port`, `db_path`, worker count, or API credentials expecting a live process to rebind/recreate those resources; restart after changing them.
