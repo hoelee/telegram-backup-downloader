@@ -116,6 +116,29 @@ docker run -d \
 
 Follow logs with `docker logs -f telegram-backup`.
 
+> **First-time login:** if `telegram_session.session` doesn't exist yet, the container needs your Telegram verification code. Run interactively first:
+>
+> ```bash
+> # Stop and remove the detached container
+> docker stop telegram-backup && docker rm telegram-backup
+>
+> # Run interactively — you'll be prompted for phone + verification code
+> docker run -it --rm \
+>   -v $(pwd)/config.json:/app/config.json \
+>   -v $(pwd)/telegram_session.session:/app/telegram_session.session \
+>   -v $(pwd)/data:/app/data \
+>   -v $(pwd)/channels:/app/channels \
+>   -v $(pwd)/logs:/app/logs \
+>   -p 8080:8080 \
+>   -e TZ=Asia/Kuala_Lumpur \
+>   hoelee/telegram-backup-downloader:latest
+>
+> # After successful login, press Ctrl+C to exit
+> # Now run detached — session is saved to ./telegram_session.session
+> ```
+>
+> The session file is written to `./telegram_session.session` on the host, so subsequent starts won't ask for verification again (unless it expires or you delete the file).
+
 ### Option C: Build from source
 
 ```bash
