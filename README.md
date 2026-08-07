@@ -46,6 +46,24 @@ docker compose up -d
 docker compose logs -f telegram-backup
 ```
 
+> **First-time login:** if `telegram_session.session` doesn't exist yet, the container needs your Telegram verification code. Run interactively first:
+>
+> ```bash
+> # Stop the detached container if running
+> docker compose down
+>
+> # Run interactively — you'll be prompted for phone + verification code
+> docker compose up
+>
+> # After successful login, press Ctrl+C to stop
+> docker compose down
+>
+> # Now start detached — session is saved
+> docker compose up -d
+> ```
+>
+> The session file is written to `./telegram_session.session` on the host, so subsequent starts won't ask for verification again (unless it expires or you delete the file).
+
 This is the `docker-compose.yml`:
 
 ```yaml
