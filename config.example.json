@@ -19,7 +19,7 @@
   "db_path": "/app/data/telegram_state.db",
   "channel_overrides": {
     "-1001231231231":{"turnon":false},
-    "-1003213213213":{"turnon":true}
+    "-1003213213213":{"turnon":false}
   },
   "channel_last_message_id_overrides": {
     "-1001231231231": {
@@ -27,7 +27,7 @@
       "last_message_id": 123123
     },
     "-1003213213213": {
-      "updateonce": true,
+      "updateonce": false,
       "last_message_id": 321321
     }
   },
