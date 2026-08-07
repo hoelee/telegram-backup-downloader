@@ -25,14 +25,64 @@ Backups are written to `channels/`; logs are written to `logs/app.log`. Stop gra
 
 ## Docker
 
-### Option A: Pull from Docker Hub (recommended)
+### Option A: Docker Compose (recommended)
 
-The image is published to Docker Hub as [`hoelee/telegram-backup-downloader`](https://hub.docker.com/r/hoelee/telegram-backup-downloader) and supports `linux/amd64` and `linux/arm64`.
+The example `docker-compose.yml` uses the pre-built image from [Docker Hub](https://hub.docker.com/r/hoelee/telegram-backup-downloader) and supports `linux/amd64` and `linux/arm64`.
 
-1. Create and configure `config.json` from the example.
-2. Run the container:
+**Before running**, create the folders and config file so the container can write to them. The compose file mounts local paths for config, session, data, channels, and logs:
 
 ```bash
+mkdir -p data channels logs
+cp config.example.json config.json
+# edit config.json with your Telegram values
+```
+
+> On Linux, if the container runs as a non-root user, make sure the current user has read+write access to these folders (the example compose runs as `root`).
+
+Then start the stack:
+
+```bash
+docker compose up -d
+docker compose logs -f telegram-backup
+```
+
+This is the `docker-compose.yml`:
+
+```yaml
+version: "3.9"
+
+services:
+  telegram-backup:
+    image: hoelee/telegram-backup-downloader:latest
+    container_name: telegram-backup
+    restart: unless-stopped
+    user: root
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./telegram_session.session:/app/telegram_session.session
+      - ./data:/app/data
+      - ./channels:/app/channels
+      - ./logs:/app/logs
+    ports:
+      - "8080:8080"
+    environment:
+      - TZ=Asia/Kuala_Lumpur
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+```
+
+Set `status_port` to `8080` in `config.json` to use the health check and expose the status API.
+
+### Option B: docker run
+
+```bash
+mkdir -p data channels logs
+cp config.example.json config.json
+
 docker run -d \
   --name telegram-backup \
   --restart unless-stopped \
@@ -46,17 +96,15 @@ docker run -d \
   hoelee/telegram-backup-downloader:latest
 ```
 
-3. Follow logs with `docker logs -f telegram-backup`.
+Follow logs with `docker logs -f telegram-backup`.
 
-> Set `status_port` to `8080` in `config.json` to use the health check and status API.
+### Option C: Build from source
 
-### Option B: Build from source with Docker Compose
-
-1. Create and configure `config.json` from the example.
-2. Run `docker compose up -d --build`.
-3. Follow logs with `docker compose logs -f telegram-backup`.
-
-The compose configuration persists channels, logs, data, and the Telegram session. Set `status_port` to `8080` to use the supplied health check and publish the status API.
+```bash
+cp config.example.json config.json
+docker compose -f docker-compose.yml up -d --build
+docker compose logs -f telegram-backup
+```
 
 ## Configuration
 
@@ -79,8 +127,8 @@ The compose configuration persists channels, logs, data, and the Telegram sessio
 | `resync_interval_minutes` | No | `60` | Periodic backfill interval; `0` disables it. |
 | `status_port` | No | `0` | HTTP port; `0` disables the server. |
 | `db_path` | No | `telegram_state.db` | SQLite state database path. |
-| `channel_overrides` | No | `{}` | Per-channel `turnon` controls, for example `{"-1001":{"turnon":false}}`. |
-| `manual_downloads` | No | `{}` | Message IDs to prioritize, keyed by channel ID. |
+| `channel_overrides` | No | `{}` | Per-channel controls. Use `turnon: false` to skip a channel without removing it from `channels`. Example: `{"-1001":{"turnon":false}}`. Change is detected by config watcher — no restart needed. |
+| `manual_downloads` | No | `{}` | Message IDs to prioritize, keyed by channel ID. Useful to force-retry specific messages. Example: `{"-1001":[42,43,44]}`. Change is detected by config watcher — no restart needed. |
 
 `config.json` is watched every 10 seconds. Changes to channels, overrides, and manual downloads are applied without restarting. Do not set `status_port`, `db_path`, worker count, or API credentials expecting a live process to rebind/recreate those resources; restart after changing them.
 
