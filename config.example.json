@@ -4,7 +4,7 @@
   "api_hash": "your_api_hash_here",
   "phone_number": "+1234567890",
   "session_name": "telegram_session",
-  "channels": ["@channel_username", "-1001234567890"],
+  "channels": ["@channel_username", "-1001231231231", "-1003213213213"],
   "parallel_downloads": 3,
   "download_timeout_seconds": 600,
   "download_retry_count": 3,
@@ -16,7 +16,20 @@
   "retry_drop_log": true,
   "resync_interval_minutes": 60,
   "status_port": 8080,
-  "db_path": "data/telegram_state.db",
-  "channel_overrides": {},
+  "db_path": "/app/data/telegram_state.db",
+  "channel_overrides": {
+    "-1001231231231":{"turnon":false},
+    "-1003213213213":{"turnon":true}
+  },
+  "channel_last_message_id_overrides": {
+    "-1001231231231": {
+      "updateonce": false,
+      "last_message_id": 123123
+    },
+    "-1003213213213": {
+      "updateonce": true,
+      "last_message_id": 321321
+    }
+  },
   "manual_downloads": {}
 }

@@ -125,6 +125,17 @@ def validate_config(cfg):
         raise ValueError("Config key 'api_id' must be a positive integer")
     if not all(isinstance(channel, (str, int)) for channel in cfg["channels"]):
         raise ValueError("Config key 'channels' must contain strings or integers")
+    overrides = cfg.get("channel_last_message_id_overrides", {})
+    if not isinstance(overrides, dict):
+        raise ValueError("Config key 'channel_last_message_id_overrides' must be an object")
+    for channel_id, override in overrides.items():
+        if not isinstance(channel_id, str) or not isinstance(override, dict):
+            raise ValueError("Each channel_last_message_id_overrides entry must have a string channel ID and object value")
+        if not isinstance(override.get("updateonce"), bool):
+            raise ValueError(f"Override for channel '{channel_id}' must include boolean 'updateonce'")
+        message_id = override.get("last_message_id")
+        if not isinstance(message_id, int) or isinstance(message_id, bool) or message_id < 0:
+            raise ValueError(f"Override for channel '{channel_id}' must include a non-negative integer 'last_message_id'")
 
 
 def sanitize_filename(name):
@@ -190,6 +201,27 @@ async def update_last_message_id(channel_id, message_id):
         ON CONFLICT(channel_id) DO UPDATE SET last_message_id=MAX(last_message_id,excluded.last_message_id)""",
                      (channel_id, message_id))
     await db.commit()
+
+
+async def apply_last_message_id_overrides():
+    overrides = CONFIG.get("channel_last_message_id_overrides", {})
+    changed = False
+    for channel_id, override in overrides.items():
+        if not override["updateonce"]:
+            continue
+        if channel_id not in MONITORED_CHANNEL_IDS:
+            logger.warning("[CURSOR OVERRIDE] Channel %s is not resolved; will retry", channel_id)
+            continue
+        message_id = override["last_message_id"]
+        await db.execute("""INSERT INTO channel_state(channel_id,last_message_id) VALUES (?,?)
+            ON CONFLICT(channel_id) DO UPDATE SET last_message_id=excluded.last_message_id""",
+                         (channel_id, message_id))
+        await db.commit()
+        override["updateonce"] = False
+        changed = True
+        logger.info("[CURSOR OVERRIDE] Set channel %s last_message_id to %d", channel_id, message_id)
+    if changed:
+        await save_config()
 
 
 async def media_exists(channel_id, message_id):
@@ -319,6 +351,7 @@ async def reload_config():
         RETRY_DROP_LOG = CONFIG.get("retry_drop_log", True)
         apply_channel_overrides()
         await resolve_channels()
+        await apply_last_message_id_overrides()
         if manual_changed:
             await process_manual_downloads()
         logger.info("[CONFIG] Reloaded")
@@ -339,6 +372,8 @@ async def config_watcher():
             if mtime != last_mtime:
                 last_mtime = mtime
                 await reload_config()
+            else:
+                await apply_last_message_id_overrides()
         except asyncio.CancelledError:
             break
         except Exception as error:
@@ -627,6 +662,7 @@ async def connection_supervisor():
         try:
             await client.connect()
             await resolve_channels()
+            await apply_last_message_id_overrides()
             if sync_task and not sync_task.done():
                 sync_task.cancel()
                 await asyncio.gather(sync_task, return_exceptions=True)
@@ -751,6 +787,7 @@ async def main():
     me = await client.get_me()
     logger.info("[CONNECTED] Logged in as %s", me.first_name)
     await resolve_channels()
+    await apply_last_message_id_overrides()
     await process_manual_downloads()
     for index in range(PARALLEL_DOWNLOADS):
         worker_tasks.append(asyncio.create_task(worker(index + 1)))

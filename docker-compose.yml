@@ -1,13 +1,14 @@
 version: "3.9"
+
 services:
   telegram-backup:
-    build: .
+    image: hoelee/telegram-backup-downloader:latest
     container_name: telegram-backup
     restart: unless-stopped
+    user: root
     volumes:
       - ./config.json:/app/config.json:ro
       - ./telegram_session.session:/app/telegram_session.session
-      - ./data:/app/data
       - ./channels:/app/channels
       - ./logs:/app/logs
     ports:

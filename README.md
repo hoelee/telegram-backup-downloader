@@ -128,9 +128,25 @@ docker compose logs -f telegram-backup
 | `status_port` | No | `0` | HTTP port; `0` disables the server. |
 | `db_path` | No | `telegram_state.db` | SQLite state database path. |
 | `channel_overrides` | No | `{}` | Per-channel controls. Only `turnon` is supported. Use `turnon: false` to skip a channel without removing it from `channels`. Example: `{"-100321012345":{"turnon":false}}`. Change is detected by config watcher — no restart needed. |
+| `channel_last_message_id_overrides` | No | `{}` | One-time per-channel sync cursor overrides. With `updateonce: true`, sets the channel's SQLite `last_message_id` to the specified value, then automatically changes `updateonce` to `false` in `config.json`. Use numeric Telegram peer IDs that are included in `channels`. |
 | `manual_downloads` | No | `{}` | Message IDs to prioritize, keyed by channel ID. Useful to force-retry specific messages. Example: `{"-1001":[42,43,44]}`. Change is detected by config watcher — no restart needed. |
 
-`config.json` is watched every 10 seconds. Changes to channels, overrides, and manual downloads are applied without restarting. Do not set `status_port`, `db_path`, worker count, or API credentials expecting a live process to rebind/recreate those resources; restart after changing them.
+`config.json` is watched every 10 seconds. Changes to channels, overrides, cursor overrides, and manual downloads are applied without restarting. Do not set `status_port`, `db_path`, worker count, or API credentials expecting a live process to rebind/recreate those resources; restart after changing them.
+
+### One-Time Sync Cursor Override
+
+Use `channel_last_message_id_overrides` to resume a channel from a known message ID or re-download messages after a cursor correction. The channel must be present in `channels`. When the running downloader detects `updateonce: true`, it updates the database cursor and writes `updateonce: false` only after the database change succeeds.
+
+```json
+"channel_last_message_id_overrides": {
+  "-1004295572354": {
+    "updateonce": true,
+    "last_message_id": 21321
+  }
+}
+```
+
+The next sync starts from a small overlap before that cursor, so existing message and media records prevent duplicate output.
 
 ## HTTP API
 
