@@ -7,7 +7,8 @@ services:
     restart: unless-stopped
     user: root
     volumes:
-      - ./config.json:/app/config.json:ro
+      # config.json must be read-write — the program writes back to it (e.g. flips updateonce to false)
+      - ./config.json:/app/config.json
       - ./telegram_session.session:/app/telegram_session.session
       - ./channels:/app/channels
       - ./logs:/app/logs

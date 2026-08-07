@@ -58,7 +58,7 @@ services:
     restart: unless-stopped
     user: root
     volumes:
-      - ./config.json:/app/config.json:ro
+      - ./config.json:/app/config.json
       - ./telegram_session.session:/app/telegram_session.session
       - ./data:/app/data
       - ./channels:/app/channels
@@ -86,7 +86,7 @@ cp config.example.json config.json
 docker run -d \
   --name telegram-backup \
   --restart unless-stopped \
-  -v $(pwd)/config.json:/app/config.json:ro \
+  -v $(pwd)/config.json:/app/config.json \
   -v $(pwd)/telegram_session.session:/app/telegram_session.session \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/channels:/app/channels \
@@ -130,6 +130,8 @@ docker compose logs -f telegram-backup
 | `channel_overrides` | No | `{}` | Per-channel controls. Only `turnon` is supported. Use `turnon: false` to skip a channel without removing it from `channels`. Example: `{"-100321012345":{"turnon":false}}`. Change is detected by config watcher — no restart needed. |
 | `channel_last_message_id_overrides` | No | `{}` | One-time per-channel sync cursor overrides. With `updateonce: true`, sets the channel's SQLite `last_message_id` to the specified value, then automatically changes `updateonce` to `false` in `config.json`. Use numeric Telegram peer IDs that are included in `channels`. |
 | `manual_downloads` | No | `{}` | Message IDs to prioritize, keyed by channel ID. Useful to force-retry specific messages. Example: `{"-1001":[42,43,44]}`. Change is detected by config watcher — no restart needed. |
+
+`config.json` must be mounted read-write. The program writes back to it directly — for example, when `channel_last_message_id_overrides` runs with `updateonce: true`, the downloader updates the database and then flips `updateonce` to `false` in the same file. A read-only mount (`:ro`) would break this and any other live config update.
 
 `config.json` is watched every 10 seconds. Changes to channels, overrides, cursor overrides, and manual downloads are applied without restarting. Do not set `status_port`, `db_path`, worker count, or API credentials expecting a live process to rebind/recreate those resources; restart after changing them.
 
