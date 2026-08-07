@@ -16,7 +16,7 @@
   "retry_drop_log": true,
   "resync_interval_minutes": 60,
   "status_port": 8080,
-  "db_path": "telegram_state.db",
+  "db_path": "data/telegram_state.db",
   "channel_overrides": {},
   "manual_downloads": {}
 }
