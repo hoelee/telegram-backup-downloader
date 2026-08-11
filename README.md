@@ -33,11 +33,14 @@ The example `docker-compose.yml` uses the pre-built image from [Docker Hub](http
 
 ```bash
 mkdir -p data channels logs
+touch telegram_session.session
 cp config.example.json config.json
 # edit config.json with your Telegram values
 ```
 
-> On Linux, if the container runs as a non-root user, make sure the current user has read+write access to these folders (the example compose runs as `root`).
+> **Important:** The `telegram_session.session` file must exist (even empty) before the container starts. If the container can't find the session file, it will fail to start. Create an empty file as shown above.
+
+On Linux, if the container runs as a non-root user, make sure the current user has read+write access to these folders (the example compose runs as `root`).
 
 Then start the stack:
 
@@ -46,13 +49,14 @@ docker compose up -d
 docker compose logs -f telegram-backup
 ```
 
-> **First-time login:** if `telegram_session.session` doesn't exist yet, the container needs your Telegram verification code. Run interactively first:
+> **First-time login:** After the initial `docker compose up -d`, the container will start but won't be logged in yet. You need to authenticate interactively first:
 >
 > ```bash
-> # Stop the detached container if running
+> # Stop the detached container
 > docker compose down
 >
-> # Run interactively — you'll be prompted for phone + verification code
+> # Run interactively — you'll be prompted for phone number + verification code
+> # (and password if you have 2FA enabled)
 > docker compose up
 >
 > # After successful login, press Ctrl+C to stop
@@ -99,6 +103,7 @@ Set `status_port` to `8080` in `config.json` to use the health check and expose 
 
 ```bash
 mkdir -p data channels logs
+touch telegram_session.session
 cp config.example.json config.json
 
 docker run -d \
@@ -114,15 +119,18 @@ docker run -d \
   hoelee/telegram-backup-downloader:latest
 ```
 
+> **Important:** The `telegram_session.session` file must exist (even empty) before the container starts. Create an empty file as shown above.
+
 Follow logs with `docker logs -f telegram-backup`.
 
-> **First-time login:** if `telegram_session.session` doesn't exist yet, the container needs your Telegram verification code. Run interactively first:
+> **First-time login:** After the initial `docker run -d`, the container will start but won't be logged in yet. You need to authenticate interactively first:
 >
 > ```bash
 > # Stop and remove the detached container
 > docker stop telegram-backup && docker rm telegram-backup
 >
-> # Run interactively — you'll be prompted for phone + verification code
+> # Run interactively — you'll be prompted for phone number + verification code
+> # (and password if you have 2FA enabled)
 > docker run -it --rm \
 >   -v $(pwd)/config.json:/app/config.json \
 >   -v $(pwd)/telegram_session.session:/app/telegram_session.session \
